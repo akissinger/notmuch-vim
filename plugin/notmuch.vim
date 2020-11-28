@@ -314,7 +314,15 @@ ruby << EOF
 		q.sort = Notmuch::SORT_OLDEST_FIRST
 		msgs = q.search_messages
 		msgs.each do |msg|
-			m = Mail.read(msg.filename)
+			# interpret files without encoding as UTF-8 and replace bad chars with '?'
+			msg_str = File.read(msg.filename)
+		    enc = msg_str.encoding == Encoding::BINARY ? Encoding::UTF_8 : msg_str.encoding
+			msg_str.encode!(enc,
+				:invalid=>:replace,
+				:undef=>:replace,
+				:replace=>'?')
+
+			m = Mail.new(msg_str)
 			part = m.find_first_text
 			nm_m = Message.new(msg, m)
 			$messages << nm_m
@@ -327,9 +335,16 @@ ruby << EOF
 			b << "Cc: %s" % msg['cc']
 			b << "Date: %s" % msg['date']
 			nm_m.body_start = b.count
-			b << "--- %s ---" % part.mime_type
-			part.convert.each_line do |l|
-				b << l.chomp
+
+			# prevent the whole thread output from stopping if one message
+			# fails to parse.
+			if part != nil
+				b << "--- %s ---" % part.mime_type
+				part.convert.each_line do |l|
+					b << l.chomp
+				end
+			else
+				b << "GOT NIL PART IN %s" % msg.filename
 			end
 			b << ""
 			nm_m.end = b.count
@@ -655,7 +670,7 @@ ruby << EOF
 				date = Time.at(e.newest_date).strftime(date_fmt)
 				subject = e.messages.first['subject']
 				if $mail_installed
-					subject = Mail::Field.new("Subject: " + subject).to_s
+					subject = Mail::Field.parse("Subject: " + subject).to_s
 				else
 					subject = subject.force_encoding('utf-8')
 				end
