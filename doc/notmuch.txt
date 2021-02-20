@@ -72,6 +72,9 @@ q	Quit view
 A	Archive (-inbox -unread)
 I	Mark as read (-unread)
 t	Tag (prompted)
+e       Extract attachment on the current 'Attachment' line or all
+	attachments if the cursor is elsewhere.
+v       View attachment on the current 'Attachment' line.
 s	Search
 p	Save patches
 r	Reply
@@ -148,6 +151,9 @@ You can also configure your externail mail reader and sendemail program:
 >
 	let g:notmuch_reader = 'mutt -f %s'
 	let g:notmuch_sendmail = 'sendmail'
-<
+
+You can also configure what probram is used to view attachments:
+
+	let g:notmuch_view_attachment = 'xdg-open'
 
 vim:tw=78:ts=8:noet:ft=help:

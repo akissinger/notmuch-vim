@@ -35,6 +35,7 @@ let g:notmuch_show_maps = {
 	\ 't':		'show_tag("")',
 	\ 'o':		'show_open_msg()',
 	\ 'e':		'show_extract_msg()',
+	\ 'v':		'show_view_attachment()',
 	\ 's':		'show_save_msg()',
 	\ 'p':		'show_save_patches()',
 	\ 'r':		'show_reply()',
@@ -58,6 +59,8 @@ let s:notmuch_date_format_default = '%d.%m.%y'
 let s:notmuch_datetime_format_default = '%d.%m.%y %H:%M:%S'
 let s:notmuch_reader_default = 'mutt -f %s'
 let s:notmuch_sendmail_default = 'sendmail'
+let s:notmuch_view_attachment_default = 'xdg-open'
+let s:notmuch_attachment_tmpdir_default = '~/.notmuch/tmp'
 let s:notmuch_folders_count_threads_default = 0
 
 function! s:new_file_buffer(type, fname)
@@ -147,13 +150,53 @@ function! s:show_info()
 	ruby vim_puts get_message.inspect
 endfunction
 
-function! s:show_extract_msg()
+function! s:show_view_attachment()
+	let line = getline(".")
 ruby << EOF
 	m = get_message
-	m.mail.attachments.each do |a|
+	line = VIM::evaluate('line')
+
+	match = line.match(/^Attachment (\d*):/)
+	if match and match.length == 2
+		a = m.mail.attachments[match[1].to_i - 1]
+		tmpdir = VIM::evaluate('g:notmuch_attachment_tmpdir')
+		tmpdir = File.expand_path(tmpdir)
+		Dir.mkdir(tmpdir) unless Dir.exists?(tmpdir)
+		filename = File.expand_path("#{tmpdir}/#{a.filename}")
+		vim_puts "Viewing attachment #{filename}"
+		File.open(filename, 'w') do |f|
+			f.write a.body.decoded
+			cmd = VIM::evaluate('g:notmuch_view_attachment')
+			system(cmd, filename)
+		end
+	else
+		vim_puts "No attachment on this line."
+	end
+EOF
+endfunction
+
+function! s:show_extract_msg()
+	let line = getline(".")
+ruby << EOF
+	m = get_message
+	line = VIM::evaluate('line')
+
+	# If the user is on a line that has an 'Attachment'
+	# line, we just extract the one attachment.
+	match = line.match(/^Attachment (\d*):/)
+	if match and match.length == 2
+		a = m.mail.attachments[match[1].to_i - 1]
 		File.open(a.filename, 'w') do |f|
 			f.write a.body.decoded
-			print "Extracted '#{a.filename}'"
+			vim_puts "Extracted #{a.filename}"
+		end
+	else
+		# Extract them all..
+		m.mail.attachments.each do |a|
+			File.open(a.filename, 'w') do |f|
+				f.write a.body.decoded
+				vim_puts "Extracted #{a.filename}"
+			end
 		end
 	end
 EOF
@@ -326,6 +369,11 @@ ruby << EOF
 			b << "To: %s" % msg['to']
 			b << "Cc: %s" % msg['cc']
 			b << "Date: %s" % msg['date']
+			cnt = 0
+			nm_m.mail.attachments.each do |a|
+				cnt += 1
+				b << "Attachment %d: %s" % [cnt, a.filename]
+			end
 			nm_m.body_start = b.count
 			b << "--- %s ---" % part.mime_type
 			part.convert.each_line do |l|
@@ -418,6 +466,14 @@ function! s:set_defaults()
 		else
 			let g:notmuch_sendmail = s:notmuch_sendmail_default
 		endif
+	endif
+
+	if !exists('g:notmuch_attachment_tmpdir')
+		let g:notmuch_attachment_tmpdir = s:notmuch_attachment_tmpdir_default
+	endif
+
+	if !exists('g:notmuch_view_attachment')
+		let g:notmuch_view_attachment = s:notmuch_view_attachment_default
 	endif
 
 	if !exists('g:notmuch_folders_count_threads')
