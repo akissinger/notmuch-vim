@@ -295,9 +295,9 @@ endfunction
 
 function! s:show_cursor_moved()
 ruby << EOF
-	if $render.is_ready?
+    if $curbuf.renderer.is_ready?
 		VIM::command('setlocal modifiable')
-		$render.do_next
+        $curbuf.renderer.do_next
 		VIM::command('setlocal nomodifiable')
 	end
 EOF
@@ -705,7 +705,8 @@ ruby << EOF
 		$threads.clear
 		t = q.search_threads
 
-		$render = $curbuf.render_staged(t) do |b, items|
+		# $render =
+        $curbuf.render_staged(t) do |b, items|
 			items.each do |e|
 				authors = e.authors.to_utf8.split(/[,|]/).map { |a| author_filter(a) }.join(",")
 				date = Time.at(e.newest_date).strftime(date_fmt)
@@ -809,6 +810,7 @@ ruby << EOF
 		end
 
 		def is_ready?
+		    # return false if @b.line_number.nil?
 			@last_render - @b.line_number <= $curwin.height
 		end
 
@@ -822,13 +824,14 @@ ruby << EOF
 
 	class VIM::Buffer
 		include DbHelper
+        attr :renderer
 
 		def <<(a)
 			append(count(), a)
 		end
 
 		def render_staged(enumerable, &block)
-			StagedRender.new(self, enumerable, block)
+            @renderer = StagedRender.new(self, enumerable, block)
 		end
 
 		def render
