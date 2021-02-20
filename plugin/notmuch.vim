@@ -334,6 +334,7 @@ function! s:new_buffer(type)
     keepjumps 0d
     execute printf('set filetype=notmuch-%s', a:type)
     execute printf('set syntax=notmuch-%s', a:type)
+    execute printf('file nm:%s', a:type)
     ruby $curbuf.init(VIM::evaluate('a:type'))
 endfunction
 
@@ -421,8 +422,10 @@ endfunction
 function! s:folders_show_search()
 ruby << EOF
     n = $curbuf.line_number
-    s = $searches[n - 1]
-    VIM::command("call s:search('#{s}')")
+    # s = $searches[n - 1]
+    folders = VIM::evaluate('g:notmuch_folders')
+    VIM::command("call s:search('#{folders[n-1][1]}')")
+    VIM::command("file nm:#{folders[n-1][0]}")
 EOF
 endfunction
 
