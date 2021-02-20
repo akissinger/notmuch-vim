@@ -5,7 +5,7 @@ utilizing the notmuch framework.
 
 == About this fork ==
 
-This is my own fork of notmuch-vim. I have made a small fix to account for a breaking API change in ruby mail and merged a patch by Ian Main for viewing and saving attachments (https://notmuchmail.org/pipermail/notmuch/2014/019142.html).
+This is my own fork of notmuch-vim. I have fixed a breaking API change with ruby mail and merged a patch by Ian Main for viewing and saving attachments (https://notmuchmail.org/pipermail/notmuch/2014/019142.html).
 
 == Install ==
 
