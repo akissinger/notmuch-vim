@@ -175,9 +175,9 @@ ruby << EOF
 		vim_puts "Viewing attachment #{filename}"
 		File.open(filename, 'w') do |f|
 			f.write a.body.decoded
-			cmd = VIM::evaluate('g:notmuch_view_attachment')
-			system(cmd, filename)
 		end
+		cmd = VIM::evaluate('g:notmuch_view_attachment')
+		spawn(cmd, filename)
 	else
 		vim_puts "No attachment on this line."
 	end
