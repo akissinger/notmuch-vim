@@ -393,7 +393,8 @@ ruby << EOF
 			part.convert.each_line do |l|
 				b << l.chomp
 			end
-			b << ""
+			b << " "
+			b << " "
 			nm_m.end = b.count
 		end
 		b.delete(b.count)
@@ -846,7 +847,9 @@ ruby << EOF
 		attr :renderer
 
 		def <<(a)
-			append(count(), a)
+			# work-around for appending blank lines
+			append(count(), 'XXX')
+			self[count()] = a
 		end
 
 		def render_staged(enumerable, &block)
