@@ -5,7 +5,13 @@ utilizing the notmuch framework.
 
 == About this fork ==
 
-This is my own fork of notmuch-vim. I have made a small fix to account for a breaking API change in ruby mail and merged a patch by Ian Main for viewing and saving attachments (https://notmuchmail.org/pipermail/notmuch/2014/019142.html).
+This is my own fork of notmuch-vim. I have made a some updates and improvements from the upstream version:
+
+ * updated to code to work with the latest version of Ruby mail (as of early 2021)
+ * ported a few small fixes by Ian Main and Franz Fellner from the main notmuch repo (https://git.notmuchmail.org/git?p=notmuch;a=tree;f=vim;hb=HEAD)
+ * merged a patch by Ian Main for viewing and saving attachments (https://notmuchmail.org/pipermail/notmuch/2014/019142.html)
+ * set reasonable names for folder, search, and message buffers
+ * ability to jump to previous message in a thread (bound to Shift+TAB by default)
 
 == Install ==
 
