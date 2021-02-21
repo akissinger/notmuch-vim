@@ -278,9 +278,13 @@ function! s:search_refresh()
 	setlocal nomodifiable
 endfunction
 
+function! NotmuchTags(A, L, P)
+	return system("notmuch search --output=tags '*'")
+endfunction
+
 function! s:search_tag(intags)
 	if empty(a:intags)
-		let tags = input('tags: ')
+		let tags = input('tags: ', '', 'custom,NotmuchTags')
 	else
 		let tags = a:intags
 	endif
