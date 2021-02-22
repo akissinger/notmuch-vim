@@ -343,28 +343,25 @@ function! s:set_map(maps)
 endfunction
 
 function! s:fresh_buffer_name(base)
-ruby << EOF
-	base = VIM::evaluate('a:base')
-	fresh = 0
-	name = ""
+	let fresh = 0
+	let name = ""
 	while name == ""
 		if fresh == 0
-			name = "nm:#{base}"
+			let name = a:base
 		else
-			name = "nm:#{base}-#{fresh}"
-		end
+			let name = a:base . "-" . fresh
+		endif
 
-		for i in 0..VIM::Buffer.count-1
-			b = VIM::Buffer[i]
-			if /#{name}$/ =~ b.name
-				name = ""
-				fresh += 1
+		for i in range(1, bufnr('$'))
+			if stridx(bufname(i), name) != -1
+				let name = ""
+				let fresh = fresh + 1
 				break
-			end
-		end
-	end
-	VIM::command("file #{name}")
-EOF
+			endif
+		endfor
+	endwhile
+	exec printf('file %s', name)
+	" file a:base
 endfunction
 
 function! s:new_buffer(type)
@@ -377,7 +374,7 @@ function! s:new_buffer(type)
 	call s:fresh_buffer_name(a:type)
 ruby << EOF
 	ty = VIM::evaluate('a:type')
-	$curbuf.init(name)
+	$curbuf.init(ty)
 EOF
 endfunction
 
