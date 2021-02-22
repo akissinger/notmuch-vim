@@ -342,6 +342,31 @@ function! s:set_map(maps)
 	endfor
 endfunction
 
+function! s:fresh_buffer_name(base)
+ruby << EOF
+	base = VIM::evaluate('a:base')
+	fresh = 0
+	name = ""
+	while name == ""
+		if fresh == 0
+			name = "nm:#{base}"
+		else
+			name = "nm:#{base}-#{fresh}"
+		end
+
+		for i in 0..VIM::Buffer.count-1
+			b = VIM::Buffer[i]
+			if /#{name}$/ =~ b.name
+				name = ""
+				fresh += 1
+				break
+			end
+		end
+	end
+	VIM::command("file #{name}")
+EOF
+endfunction
+
 function! s:new_buffer(type)
 	enew
 	setlocal buftype=nofile bufhidden=hide
@@ -349,8 +374,11 @@ function! s:new_buffer(type)
 	keepjumps 0d
 	execute printf('set filetype=notmuch-%s', a:type)
 	execute printf('set syntax=notmuch-%s', a:type)
-	execute printf('file nm:%s', a:type)
-	ruby $curbuf.init(VIM::evaluate('a:type'))
+	call s:fresh_buffer_name(a:type)
+ruby << EOF
+	ty = VIM::evaluate('a:type')
+	$curbuf.init(name)
+EOF
 endfunction
 
 function! s:set_menu_buffer()
@@ -452,7 +480,7 @@ ruby << EOF
 	# s = $searches[n - 1]
 	folders = VIM::evaluate('g:notmuch_folders')
 	VIM::command("call s:search('#{folders[n-1][1]}')")
-	VIM::command("file nm:#{folders[n-1][0]}")
+	VIM::command("call s:fresh_buffer_name('#{folders[n-1][0]}')")
 EOF
 endfunction
 
