@@ -353,7 +353,7 @@ function! s:fresh_buffer_name(base)
 		endif
 
 		for i in range(1, bufnr('$'))
-			if stridx(bufname(i), name) != -1
+			if buflisted(i) && stridx(bufname(i), name) != -1
 				let name = ""
 				let fresh = fresh + 1
 				break
