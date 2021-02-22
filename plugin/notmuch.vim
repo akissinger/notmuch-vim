@@ -43,6 +43,7 @@ let g:notmuch_show_maps = {
 	\ '<Tab>':	'show_next_msg(1)',
 	\ '<S-Tab>':  'show_next_msg(-1)',
 	\ 'c':		'compose()',
+	\ '<Enter>': 'fold_message()',
 	\ }
 
 let g:notmuch_compose_maps = {
@@ -344,6 +345,7 @@ endfunction
 function! s:new_buffer(type)
 	enew
 	setlocal buftype=nofile bufhidden=hide
+	setlocal foldtext=getline(v:foldstart)
 	keepjumps 0d
 	execute printf('set filetype=notmuch-%s', a:type)
 	execute printf('set syntax=notmuch-%s', a:type)
@@ -355,6 +357,10 @@ function! s:set_menu_buffer()
 	setlocal nomodifiable
 	setlocal cursorline
 	setlocal nowrap
+endfunction
+
+function! s:fold_message()
+	normal za
 endfunction
 
 "" main
@@ -396,6 +402,13 @@ ruby << EOF
 			b << " "
 			b << " "
 			nm_m.end = b.count
+
+			# create folds for all messages, and open them
+			# when a message is unread
+			VIM::command("#{nm_m.start+1},#{nm_m.end}fold")
+			if msg.tags.include?('unread')
+				VIM::command("#{nm_m.start+1}foldopen")
+			end
 		end
 		b.delete(b.count)
 	end
