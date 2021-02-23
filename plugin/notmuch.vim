@@ -582,6 +582,7 @@ ruby << EOF
 	end
 
 	$db_name = nil
+	$all_emails = []
 	$email = $email_name = $email_address = nil
 	$searches = []
 	$threads = []
@@ -597,12 +598,18 @@ ruby << EOF
 	end
 
 	def get_config
+		$exclude_tags = get_config_item('search.exclude_tags').split("\n")
 		$db_name = get_config_item('database.path')
 		$email_name = get_config_item('user.name')
 		$email_address = get_config_item('user.primary_email')
+		$secondary_email_addresses = get_config_item('user.primary_email')
 		$email_name = get_config_item('user.name')
 		$email = "%s <%s>" % [$email_name, $email_address]
-		$exclude_tags = get_config_item('search.exclude_tags').split("\n")
+		other_emails = get_config_item('user.other_email')
+		$all_emails = other_emails.split("\n")
+		# Add the primary to this too as we use it for checking
+		# addresses when doing a reply
+		$all_emails.unshift($email_address)
 	end
 
 	def vim_puts(s)
@@ -678,14 +685,50 @@ ruby << EOF
 		end
 	end
 
+	def is_our_address(address)
+		$all_emails.each do |addy|
+			if address.to_s.index(addy) != nil
+				return addy
+			end
+		end
+		return nil
+	end
+
 	def open_reply(orig)
 		reply = orig.reply do |m|
-			# fix headers
-			if not m[:reply_to]
-				m.to = [orig[:from].to_s, orig[:to].to_s]
+			m.cc = []
+			m.to = []
+			email_addr = $email_address
+			# Use hashes for email addresses so we can eliminate duplicates.
+			to = Hash.new
+			cc = Hash.new
+			if orig[:from]
+				orig[:from].each do |o|
+					to[o.address] = o
+				end
 			end
-			m.cc = orig[:cc]
-			m.from = $email
+			if orig[:cc]
+				orig[:cc].each do |o|
+					cc[o.address] = o
+				end
+			end
+			if orig[:to]
+				orig[:to].each do |o|
+					cc[o.address] = o
+				end
+			end
+			to.each do |e_addr, addr|
+				m.to << addr
+			end
+			cc.each do |e_addr, addr|
+				if is_our_address(e_addr)
+					email_addr = is_our_address(e_addr)
+				else
+					m.cc << addr
+				end
+			end
+			m.to = m[:reply_to] if m[:reply_to]
+			m.from = "#{$email_name} <#{email_addr}>"
 			m.charset = 'utf-8'
 		end
 
